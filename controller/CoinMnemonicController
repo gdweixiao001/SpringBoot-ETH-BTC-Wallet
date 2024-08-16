@@ -1,0 +1,68 @@
+package com.ruoyi.web.controller.coin;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ruoyi.coin.service.ICoinService;
+import com.ruoyi.coin.service.IMjkjBaseSqlService;
+import com.ruoyi.coin.utils.CoinUtils;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.utils.MjkjUtils;
+import com.ruoyi.common.utils.blade.Func;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Map;
+
+/**
+ * 铭文详情
+ */
+@Controller
+@RequestMapping("/coin/mnemonic")
+public class CoinMnemonicController extends BaseController {
+    private String prefix = "coin/mnemonic";
+
+    @Autowired
+    private IMjkjBaseSqlService baseSqlService;
+
+    @Autowired
+    private ICoinService coinService;
+
+    //列表页面
+    @GetMapping("/index")
+    public String index() {
+        return prefix + "/index";
+    }
+
+    //列表数据
+    @PostMapping("/list")
+    @ResponseBody
+    public TableDataInfo list(HttpServletRequest request) {
+        Map<String, Object> parameterMap = MjkjUtils.getParameterMap(request);
+        String address = MjkjUtils.getMap2Str(parameterMap, "address");
+        if(Func.isNotEmpty(address)){
+            coinService.isVip(true);
+        }
+        String tableName = "coin_log_mnemonic";
+
+        Page page = getPage();
+        QueryWrapper queryWrapper = MjkjUtils.getQueryWrapper();
+        queryWrapper.like(Func.isNotEmpty(address),"address",address);
+        queryWrapper.isNotNull("address");
+        queryWrapper.orderByDesc("id");
+        queryWrapper.select("*","DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') as create_time_str");
+        IPage<Map<String, Object>> pages = baseSqlService.getDataIPageWrapper(tableName, page, queryWrapper);
+
+        return getDataTable(pages);
+    }
+
+
+
+}
