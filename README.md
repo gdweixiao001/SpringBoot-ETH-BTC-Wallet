@@ -9,7 +9,7 @@
 
 **演示地址**
 
-　　　　在线体验：<a href='http://eth.wechatqun.cn' target="_blank" >http://eth.wechatqun.cn </a> <br><br>
+　　　　在线体验：<a href='http://eth.wechatqun.cn' target="_blank" >http://eth.wechatqun.cn </a> 　　　注册邀请码：111222<br><br>
        在线客服Telegram：<a href='https://t.me/eth_xiaoweixiao' target="_blank" >BTC小微笑 </a>
 
 ## 实现原理
