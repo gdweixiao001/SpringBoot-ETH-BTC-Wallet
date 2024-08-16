@@ -1,0 +1,150 @@
+package com.ruoyi.web.controller.coin;
+
+import cn.hutool.bloomfilter.BitMapBloomFilter;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ruoyi.coin.service.ICoinService;
+import com.ruoyi.coin.service.IMjkjBaseSqlService;
+import com.ruoyi.coin.utils.CoinUtils;
+import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.domain.entity.SysUser;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.core.text.Convert;
+import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.MjkjUtils;
+import com.ruoyi.common.utils.ShiroUtils;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.blade.Func;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 地址监控
+ */
+@Controller
+@RequestMapping("/coin/monitor")
+public class CoinMonitorController extends BaseController {
+    private String prefix = "coin/monitor";
+
+    @Autowired
+    private IMjkjBaseSqlService baseSqlService;
+
+    @Autowired
+    private ICoinService coinService;
+
+    //列表页面
+    @GetMapping("/index")
+    public String index() {
+        return prefix + "/index";
+    }
+
+    //列表数据
+    @PostMapping("/list")
+    @ResponseBody
+    public TableDataInfo list(HttpServletRequest request) {
+        Map<String, Object> parameterMap = MjkjUtils.getParameterMap(request);
+        String monitor_address = MjkjUtils.getMap2Str(parameterMap, "monitor_address");
+        if(Func.isNotEmpty(monitor_address)){
+            coinService.isVip(true);
+        }
+        Long userId = ShiroUtils.getUserId();
+
+        Page page = getPage();
+        QueryWrapper<Object> queryWrapper = MjkjUtils.getQueryWrapper();
+        queryWrapper.eq(Func.isNotEmpty(monitor_address), "monitor_address", monitor_address);
+        queryWrapper.and(where ->{
+            //1类，2类和我创建的
+            where.in("level",1,2).or().eq("create_user",userId);
+        });
+        queryWrapper.orderByDesc("level");
+        queryWrapper.orderByDesc("id");
+        queryWrapper.select("*", "DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') as create_time_str");
+        IPage<Map<String, Object>> pages = baseSqlService.getDataIPageWrapper("coin_log_monitor_address", page, queryWrapper);
+        return getDataTable(pages);
+    }
+
+    //新增页面
+    @GetMapping("/add")
+    public String add() {
+        return prefix + "/add";
+    }
+
+    /**
+     * 新增
+     */
+    @PostMapping("/add")
+    @ResponseBody
+    public AjaxResult addSave(HttpServletRequest request) {
+        coinService.isVip(true);
+
+        Long userId = ShiroUtils.getUserId();
+
+        Map<String, Object> parameterMap = MjkjUtils.getParameterMap(request);
+        String monitor_address = MjkjUtils.getMap2Str(parameterMap, "monitor_address");
+        if (Func.isEmpty(monitor_address)) {
+            return error("地址不允许为空");
+        }
+        Map<String, Object> dataMap = baseSqlService.getDataOneByField("coin_log_monitor_address", "monitor_address", monitor_address);
+        if (Func.isNotEmpty(dataMap)) {
+            return error("地址已存在");
+        }
+
+        Map<String, Object> addMap = new HashMap<>();
+        addMap.put("monitor_address", monitor_address);
+        addMap.put("monitor_state", 0);//进行中
+        addMap.put("level",3);//Ⅲ类
+        addMap.put("create_user",userId);
+        baseSqlService.baseInsertData("coin_log_monitor_address", addMap);
+
+        BitMapBloomFilter filter = CoinUtils.MONITOR_ADDRESS_BLOOMFILTER;
+        if(!filter.contains(monitor_address.toUpperCase())){//不存在，则添加
+            filter.add(monitor_address.toUpperCase());
+        }
+        return toAjax(1);
+    }
+
+    @PostMapping("/remove")
+    @ResponseBody
+    public AjaxResult remove(String ids) {
+        Long userId = ShiroUtils.getUserId();
+        coinService.isVip(true);
+        List<Long> idList = Func.toLongList(ids);
+        for(Long id:idList){
+            Map<String, Object> dataMap = baseSqlService.getTableById("coin_log_monitor_address", id);
+            if(Func.isNotEmpty(dataMap)){
+                String address = MjkjUtils.getMap2Str(dataMap, "monitor_address");
+                Integer level = MjkjUtils.getMap2Integer(dataMap, "level");
+                String create_user = MjkjUtils.getMap2Str(dataMap, "create_user");
+                if(level!=3){
+                    return error("只能删除Ⅲ类地址");
+                }
+                if(Func.isEmpty(create_user) || !Func.equals(create_user,userId.toString())){
+                    return error("只能删除本人添加的数据");
+                }
+            }
+            baseSqlService.baseRealDeleteSql("coin_log_monitor_address",id);
+
+        }
+        return toAjax(1);
+    }
+
+
+}
