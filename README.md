@@ -9,7 +9,8 @@
 
 **演示地址**
 
-　　　　在线体验：<a href='http://eth.wechatqun.cn' target="_blank" >[http://insc.wechatqun.cn](http://eth.wechatqun.cn) </a>
+　　　　在线体验：<a href='http://eth.wechatqun.cn' target="_blank" >[http://insc.wechatqun.cn](http://eth.wechatqun.cn) </a> <br><br>
+       在线客服Telegram：<a href='https://t.me/eth_xiaoweixiao' target="_blank" >BTC小微笑 </a>
 
 ## 实现原理
 **密钥碰撞系统实现原理**
