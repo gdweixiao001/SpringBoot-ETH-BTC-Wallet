@@ -41,7 +41,7 @@
 
 ​    联系客服获取安装包 -》在线客服Telegram：<a href='https://t.me/web3_dev_gg' target="_blank" >咸鱼客服 </a>
 
-​    赠送60w监控地址
+​    赠送50w监控地址
 
 ## 4.软件优势
    1、支持 ETH、BSC、BASE、Polygon、OP、Avalanche 等以太坊虚拟机 (EVM) 链
